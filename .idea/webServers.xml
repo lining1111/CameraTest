@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="02b716a1-c1d0-4e46-bc23-ff105a09f243" name="10.100.45.144">
+        <fileTransfer accessType="SFTP" host="10.168.1.112" port="22" sshConfigId="88145659-e52c-4559-9b83-1a24a10349c5" sshConfig="nvidianx@10.168.1.112:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
