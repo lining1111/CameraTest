@@ -6,10 +6,17 @@ set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenCV REQUIRED)
 
-set(LINK_LIBS m pthread jpeg iconv sqlite3)
+set(LINK_LIBS m pthread jpeg iconv sqlite3 ssl crypto)
+set(LIVE555_LIBS liveMedia groupsock BasicUsageEnvironment UsageEnvironment )
 include_directories(.)
 include_directories(include)
 include_directories(${OpenCV_INCLUDE_DIRS})
+#live555
+include_directories(/usr/local/include/BasicUsageEnvironment)
+include_directories(/usr/local/include/groupsock)
+include_directories(/usr/local/include/liveMedia)
+include_directories(/usr/local/include/UsageEnvironment)
+
 
 set(SRC_DIRS src
         )
@@ -20,7 +27,7 @@ foreach (src_dir ${SRC_DIRS})
 endforeach (src_dir)
 
 add_executable(${TargetName} main.cpp ${SRC_FILES})
-target_link_libraries(${TargetName} ${OpenCV_LIBS} ${LINK_LIBS})
+target_link_libraries(${TargetName} ${OpenCV_LIBS} ${LIVE555_LIBS} ${LINK_LIBS})
 
 ##test
 add_subdirectory(test)
