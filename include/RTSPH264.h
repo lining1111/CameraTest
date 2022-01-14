@@ -17,7 +17,7 @@ using namespace std;
 
 class RTSPH264 {
 public:
-    string fifioPath = "/tmp/video_fifo";//fifo的位置
+    string fifioPath = "./video_fifo";//fifo的位置
     int fifoFdWr = 0;
     TaskScheduler *scheduler = nullptr;
     UsageEnvironment *env = nullptr;
@@ -25,12 +25,6 @@ public:
     H264VideoStreamFramer *videoSource = nullptr;
     RTPSink *videoSink = nullptr;
     RTCPInstance *rtcp = nullptr;
-
-    Boolean reuseFirstSource = False;
-    Boolean iFrameOnly = False;
-    static char newDemuxWatchVariable;
-    static MatroskaFileServerDemux *matroskaDemux;
-    static OggFileServerDemux *oggDemux;
 
     //验证信息相关
     bool isNeedAuth = false;
@@ -42,7 +36,7 @@ public:
     thread thread_dumpFifo;//向fifo内填充图像
     thread thread_rtspServer;//启动rtsp服务端
 
-
+//#define STREAM_DEBUG //是否开启rtsp server测试
 public:
     RTSPH264();
 
