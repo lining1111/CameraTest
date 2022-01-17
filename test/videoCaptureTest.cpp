@@ -45,15 +45,15 @@ int main() {
 
     //要的数据
     MyVideoCapture::OutInfo outInfo;
-//    Mat img;
-//    img.create(height, width, CV_8UC3);
-//    memcpy(img.data, buffer.data(), buffer.size());
-//    if (IMGSHOW){
-//        Mat imgShow;
-//        cvtColor(img,imgShow,COLOR_JP)
-//        imshow("img", img);
-//        waitKey(0);
-//    }
+    Mat img;
+    img.create(height, width, CV_8UC3);
+    memcpy(img.data, buffer.data(), buffer.size());
+    if (IMGSHOW){
+        Mat imgShow;
+        cvtColor(img,imgShow,COLOR_YUV2BGRA_YUYV);
+        imshow("imgShow", img);
+        waitKey(0);
+    }
 
     MyVideoCapture::GetOutInfo(outInfo, tv, pixelFormat, width, height, (char *) buffer.data(), buffer.size());
 

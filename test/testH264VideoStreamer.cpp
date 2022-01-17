@@ -31,7 +31,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 UsageEnvironment *env;
 //char const *inputFileName = "./video/test.264";
-char const *inputFileName = "./video_fifo";
+char const *inputFileName = "./video/slamtv10.264";
+//char const *inputFileName = "./video_fifo";
 H264VideoStreamFramer *videoSource;
 RTPSink *videoSink;
 

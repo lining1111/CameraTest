@@ -13,18 +13,20 @@
 #include <groupsock/GroupsockHelper.hh>
 #include <thread>
 
+#include "Camera.h"
+
 using namespace std;
 
 class RTSPH264 {
 public:
-    string fifioPath = "./video_fifo";//fifo的位置
-    int fifoFdWr = 0;
     TaskScheduler *scheduler = nullptr;
     UsageEnvironment *env = nullptr;
     string streamName = "testStream";
     H264VideoStreamFramer *videoSource = nullptr;
     RTPSink *videoSink = nullptr;
     RTCPInstance *rtcp = nullptr;
+    //camera
+    Camera *camera;
 
     //验证信息相关
     bool isNeedAuth = false;

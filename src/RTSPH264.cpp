@@ -9,11 +9,14 @@
 #include "RTSPH264.h"
 
 RTSPH264::RTSPH264() {
-
+    camera = new Camera();
 }
 
 RTSPH264::~RTSPH264() {
-    Close();
+    if (isOpen) {
+        Close();
+    }
+    delete camera;
 }
 
 void RTSPH264::announceURL(RTSPServer *rtspServer, ServerMediaSession *sms) {
@@ -39,13 +42,8 @@ void RTSPH264::announceURL(RTSPServer *rtspServer, ServerMediaSession *sms) {
 }
 
 int RTSPH264::Open() {
-    //2. 创建fifo
-    if (access(fifioPath.c_str(), F_OK) < 0) {
-        if (mkfifo(fifioPath.c_str(), 0777) < 0) {
-            *env << "mkfifo failed:" << strerror(errno);
-            return -1;
-        }
-    }
+    //1.打开camera
+    camera->Init();
 
     isOpen = true;
 
@@ -67,8 +65,8 @@ int RTSPH264::Run() {
 
 int RTSPH264::Close() {
     isOpen = false;
-    //关闭fifo write
-    close(fifoFdWr);
+    //关闭camera
+    camera->Destroy();
     //关闭 rtsp server
     env->reclaim();
     delete scheduler;
@@ -89,45 +87,14 @@ void RTSPH264::ThreadDumpFifo(void *p) {
 
     auto env = rtsph264->env;
 
-    rtsph264->fifoFdWr = open(rtsph264->fifioPath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
-    if (rtsph264->fifoFdWr < 0) {
-        *env << "fail open fifo\n";
-        exit(1);
-    }
-
-    //测试将test.264写入到fifo
-    FILE *fileH264;
-    fileH264 = fopen("./video/test.264", "r");
-    if (fileH264 == nullptr) {
-        *env << "test.264 not open\n";
-        exit(1);
-    }
-    //写fifo容量有限，达到上限后，就不能再写了
-    int i = 0;
-    while (!feof(fileH264)) {
-        unsigned char buffer[1024];
-        int get;
-        get = fread(buffer, 1, sizeof(buffer) / sizeof(buffer[0]), fileH264);
-        int ret = write(rtsph264->fifoFdWr, buffer, get);
-        i++;
-        cout << "copy " << i << endl;
-        if (ret != get) {
-            cout << "write fifo fail" << endl;
-        }
-    }
-    fseek(fileH264, 0, SEEK_SET);
-    fclose(fileH264);
-
-
     //将摄像头的帧数据写入到fifo
-
-
-
     while (rtsph264->isOpen) {
-        sleep(10);
+        usleep(15 * 1000);
+        rtsph264->camera->GetNextFrame();
     }
 
 }
+
 
 void RTSPH264::ThreadRtspServer(void *p) {
     if (p == nullptr) {
@@ -144,76 +111,124 @@ void RTSPH264::ThreadRtspServer(void *p) {
 #ifdef STREAM_DEBUG
     stream = "./video/test.264";
 #else
-    stream = rtsph264->fifioPath;
+    stream = rtsph264->camera->fifoName;
 #endif
 
+    //TODO 简单的server可以实现，复杂的不稳定，待查
 
-    //1 env
+//    //1 env
+//    rtsph264->scheduler = BasicTaskScheduler::createNew();
+//    rtsph264->env = BasicUsageEnvironment::createNew(*rtsph264->scheduler);
+//
+//    // Create 'groupsocks' for RTP and RTCP:
+//    struct sockaddr_storage destinationAddress;
+//    destinationAddress.ss_family = AF_INET;
+//    ((struct sockaddr_in &) destinationAddress).sin_addr.s_addr = chooseRandomIPv4SSMAddress(*rtsph264->env);
+//    // Note: This is a multicast address.  If you wish instead to stream
+//    // using unicast, then you should use the "testOnDemandRTSPServer"
+//    // test program - not this test program - as a model.
+//    const unsigned short rtpPortNum = 18888;
+//    const unsigned short rtcpPortNum = rtpPortNum + 1;
+//    const unsigned char ttl = 255;
+//
+//    const Port rtpPort(rtpPortNum);
+//    const Port rtcpPort(rtcpPortNum);
+//
+//    Groupsock rtpGroupsock(*rtsph264->env, destinationAddress, rtpPort, ttl);
+//    rtpGroupsock.multicastSendOnly(); // we're a SSM source
+//    Groupsock rtcpGroupsock(*rtsph264->env, destinationAddress, rtcpPort, ttl);
+//    rtcpGroupsock.multicastSendOnly(); // we're a SSM source
+//
+//    // Create a 'H264 Video RTP' sink from the RTP 'groupsock':
+//    OutPacketBuffer::maxSize = 600000;
+//    rtsph264->videoSink = H264VideoRTPSink::createNew(*rtsph264->env, &rtpGroupsock, 96);
+//    // Create (and start) a 'RTCP instance' for this RTP sink:
+//    const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
+//    const unsigned maxCNAMElen = 100;
+//    unsigned char CNAME[maxCNAMElen + 1];
+//    gethostname((char *) CNAME, maxCNAMElen);
+//    CNAME[maxCNAMElen] = '\0'; // just in case
+//    rtsph264->rtcp = RTCPInstance::createNew(*rtsph264->env, &rtcpGroupsock,
+//                                             estimatedSessionBandwidth, CNAME,
+//                                             rtsph264->videoSink, NULL /* we're a server */,
+//                                             True /* we're a SSM source */);
+//
+//    auto env = rtsph264->env;
+//
+//
+//    // Note: This starts RTCP running automatically
+//    UserAuthenticationDatabase *authDB = nullptr;
+//    if (rtsph264->isNeedAuth) {
+//        authDB = new UserAuthenticationDatabase;
+//        authDB->addUserRecord(rtsph264->usr.c_str(), rtsph264->passwd.c_str());
+//    }
+//    RTSPServer *rtspServer = RTSPServer::createNew(*env, 8554, authDB);
+//    if (rtspServer == nullptr) {
+//        *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+//        exit(1);
+//    }
+//
+//    ServerMediaSession *sms = ServerMediaSession::createNew(*env, rtsph264->streamName.c_str(),
+//                                                            stream.c_str(),
+//                                                            "Session streamed by \"testH264VideoStreamer\"",
+//                                                            True /*SSM*/);
+//    sms->addSubsession(PassiveServerMediaSubsession::createNew(*rtsph264->videoSink,
+//                                                               rtsph264->rtcp));
+//    rtspServer->addServerMediaSession(sms);
+//    announceURL(rtspServer, sms);
+//
+//    // Start the streaming:
+//    *env << "Beginning streaming...\n";
+//    play(rtsph264);
+//
+//    env->taskScheduler().doEventLoop(); // does not return
+
+    // Begin by setting up our usage environment:
     rtsph264->scheduler = BasicTaskScheduler::createNew();
     rtsph264->env = BasicUsageEnvironment::createNew(*rtsph264->scheduler);
 
-    // Create 'groupsocks' for RTP and RTCP:
-    struct sockaddr_storage destinationAddress;
-    destinationAddress.ss_family = AF_INET;
-    ((struct sockaddr_in &) destinationAddress).sin_addr.s_addr = chooseRandomIPv4SSMAddress(*rtsph264->env);
-    // Note: This is a multicast address.  If you wish instead to stream
-    // using unicast, then you should use the "testOnDemandRTSPServer"
-    // test program - not this test program - as a model.
-    const unsigned short rtpPortNum = 18888;
-    const unsigned short rtcpPortNum = rtpPortNum + 1;
-    const unsigned char ttl = 255;
+    UserAuthenticationDatabase *authDB = NULL;
+#ifdef ACCESS_CONTROL
+    // To implement client access control to the RTSP server, do the following:
+  authDB = new UserAuthenticationDatabase;
+  authDB->addUserRecord("username1", "password1"); // replace these with real strings
+  // Repeat the above with each <username>, <password> that you wish to allow
+  // access to the server.
+#endif
 
-    const Port rtpPort(rtpPortNum);
-    const Port rtcpPort(rtcpPortNum);
-
-    Groupsock rtpGroupsock(*rtsph264->env, destinationAddress, rtpPort, ttl);
-    rtpGroupsock.multicastSendOnly(); // we're a SSM source
-    Groupsock rtcpGroupsock(*rtsph264->env, destinationAddress, rtcpPort, ttl);
-    rtcpGroupsock.multicastSendOnly(); // we're a SSM source
-
-    // Create a 'H264 Video RTP' sink from the RTP 'groupsock':
-    OutPacketBuffer::maxSize = 100000;
-    rtsph264->videoSink = H264VideoRTPSink::createNew(*rtsph264->env, &rtpGroupsock, 96);
-    // Create (and start) a 'RTCP instance' for this RTP sink:
-    const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
-    const unsigned maxCNAMElen = 100;
-    unsigned char CNAME[maxCNAMElen + 1];
-    gethostname((char *) CNAME, maxCNAMElen);
-    CNAME[maxCNAMElen] = '\0'; // just in case
-    rtsph264->rtcp = RTCPInstance::createNew(*rtsph264->env, &rtcpGroupsock,
-                                             estimatedSessionBandwidth, CNAME,
-                                             rtsph264->videoSink, NULL /* we're a server */,
-                                             True /* we're a SSM source */);
-
-    auto env = rtsph264->env;
-
-
-    // Note: This starts RTCP running automatically
-    UserAuthenticationDatabase *authDB = nullptr;
-    if (rtsph264->isNeedAuth) {
-        authDB = new UserAuthenticationDatabase;
-        authDB->addUserRecord(rtsph264->usr.c_str(), rtsph264->passwd.c_str());
-    }
-    RTSPServer *rtspServer = RTSPServer::createNew(*env, 8554, authDB);
-    if (rtspServer == nullptr) {
-        *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+    // Create the RTSP server:
+    RTSPServer *rtspServer = RTSPServer::createNew(*rtsph264->env, 8554, authDB);
+    if (rtspServer == NULL) {
+        *rtsph264->env << "Failed to create RTSP server: " << rtsph264->env->getResultMsg() << "\n";
         exit(1);
     }
 
-    ServerMediaSession *sms = ServerMediaSession::createNew(*env, rtsph264->streamName.c_str(),
-                                                            stream.c_str(),
-                                                            "Session streamed by \"testH264VideoStreamer\"",
-                                                            True /*SSM*/);
-    sms->addSubsession(PassiveServerMediaSubsession::createNew(*rtsph264->videoSink,
-                                                               rtsph264->rtcp));
-    rtspServer->addServerMediaSession(sms);
-    announceURL(rtspServer, sms);
+    char const *descriptionString
+            = "Session streamed by \"testOnDemandRTSPServer\"";
 
-    // Start the streaming:
-    *env << "Beginning streaming...\n";
-    play(rtsph264);
 
-    env->taskScheduler().doEventLoop(); // does not return
+    {
+        ServerMediaSession *sms
+                = ServerMediaSession::createNew(*rtsph264->env, rtsph264->streamName.c_str(),
+                                                rtsph264->streamName.c_str(),
+                                                descriptionString);
+        Boolean reuseFirstSource = False;
+        sms->addSubsession(H264VideoFileServerMediaSubsession
+                           ::createNew(*rtsph264->env, stream.c_str(), reuseFirstSource));
+        rtspServer->addServerMediaSession(sms);
+
+        announceURL(rtspServer, sms);
+    }
+    if (rtspServer->setUpTunnelingOverHTTP(80) || rtspServer->setUpTunnelingOverHTTP(8000) ||
+        rtspServer->setUpTunnelingOverHTTP(8080)) {
+        *rtsph264->env << "\n(We use port " << rtspServer->httpServerPortNum()
+                       << " for optional RTSP-over-HTTP tunneling.)\n";
+    } else {
+        *rtsph264->env << "\n(RTSP-over-HTTP tunneling is not available.)\n";
+    }
+
+    rtsph264->env->taskScheduler().doEventLoop(); // does not return
+
 
 }
 
@@ -243,7 +258,7 @@ void RTSPH264::play(void *p) {
 #ifdef STREAM_DEBUG
     stream = "./video/test.264";
 #else
-    stream = rtsph264->fifioPath;
+    stream = rtsph264->camera->fifoName;
 #endif
     ByteStreamFileSource *fileSource
             = ByteStreamFileSource::createNew(*env, stream.c_str());

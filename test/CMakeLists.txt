@@ -11,6 +11,7 @@ target_link_libraries(configTest ${OpenCV_LIBS} ${LINK_LIBS})
 
 #rtspTest
 add_executable(rtspTest rtspTest.cpp
+        ../src/Camera.cpp
         ../src/RTSPH264.cpp)
 target_link_libraries(rtspTest ${OpenCV_LIBS} ${LIVE555_LIBS} ${LINK_LIBS})
 
