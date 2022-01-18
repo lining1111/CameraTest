@@ -59,8 +59,10 @@ int Camera::writePipe() {
     int ret = 0;
     if (h264BufLen > 0) {
         ret = write(pipe_fd, h264Buf, h264BufLen);
-        if (ret = h264BufLen) {
-            cout << "frame len write:" << h264BufLen << endl;
+        if (ret == h264BufLen) {
+            cout << "frame len write success:" << h264BufLen << endl;
+        } else {
+            cout << "frame len write fail:" << ret << endl;
         }
     }
     return ret;
@@ -206,8 +208,8 @@ int Camera::isCanRead(void) {
     int ret;
     FD_ZERO(&fds);
     FD_SET(fd, &fds);            /*Timeout*/
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000 * 20;
     ret = select(fd + 1, &fds, NULL, NULL, &tv);
 
     if (-1 == ret) {
@@ -294,7 +296,7 @@ void Camera::compressBegin(Camera::Encoder *en, int width, int height) {
     en->picture = (x264_picture_t *) malloc(sizeof(x264_picture_t));
     x264_param_default(en->param); //set default param
     //en->param->rc.i_rc_method = X264_RC_CQP;
-    en->param->i_log_level = X264_LOG_DEBUG;
+    en->param->i_log_level = X264_LOG_NONE;
 
     en->param->i_threads = X264_SYNC_LOOKAHEAD_AUTO;
     en->param->i_width = width; //set frame width
@@ -409,24 +411,40 @@ void Camera::Init() {
     openPipe();
     initEncoder();
     startCapture();
+    isInit = true;
 }
 
 void Camera::GetNextFrame(void) {
     int ret;
+    double procMs;
+    clock_t getFrameStart;
+    clock_t getFrameEnd;
+    clock_t writeFrameStart;
+    clock_t writeFrameEnd;
+    getFrameStart = clock();
+
     ret = isCanRead();
     if (ret > 0) {
 
         readOneFrame();
-//        fwrite(this->h264Buf, this->h264BufLen, 1, this->pipe_fd);
+        getFrameEnd = clock();
+        procMs = (getFrameEnd - getFrameStart) / (CLOCKS_PER_SEC / 1000);
+        cout << "get frame spend " << procMs << " ms" << endl;
+        writeFrameStart = clock();
         writePipe();
+        writeFrameEnd = clock();
+        procMs = (writeFrameEnd - writeFrameStart) / (CLOCKS_PER_SEC / 1000);
+        cout << "write frame spend " << procMs << " ms" << endl;
     } else {
 
     }
 }
 
 void Camera::Destroy() {
-    stopCapture();
-    closeEncoder();
-    closePipe();
-    closeCamera();
+    if (isInit) {
+        stopCapture();
+        closeEncoder();
+        closePipe();
+        closeCamera();
+    }
 }

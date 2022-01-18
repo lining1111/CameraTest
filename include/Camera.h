@@ -42,6 +42,8 @@ public:
     int pipe_fd;
     string fifoName = "./video_fifo";
 
+    bool isInit = false;
+
 public:
     Camera();
 
