@@ -5,7 +5,7 @@
     v4l2-ctl -all 列出所有摄像头信息
     v4l2-ctl --list-devices
 
-## live555 http://www.live555.com/
+## live555 http://www.live555.com/  live555文档：http://www.live555.com/liveMedia/
 
 vlc观看有延迟，主要是vlc设置问题 工具---偏好设置---(显示全部)输入\编解码器---网络缓存(ms)
 
