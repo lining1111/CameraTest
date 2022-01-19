@@ -25,11 +25,17 @@ Camera::Camera() {
 
 }
 
-Camera::Camera(int width, int height, string video, string fifoName) {
-    this->width = width;
-    this->height = height;
-    this->file_video = video;
-    this->fifoName = fifoName;
+Camera::Camera(Config conf) {
+    if (!conf.dev.empty()) {
+        this->file_video = conf.dev;
+    }
+    if (!conf.fifo.empty()) {
+        this->fifoName = conf.fifo;
+    }
+
+    this->width = conf.picWidth;
+    this->height = conf.picHeight;
+    this->fps = conf.fps;
 }
 
 
@@ -119,6 +125,7 @@ void Camera::initCamera(void) {
     printf("camera device name is : %s\n", cap.card);
     printf("camera bus information: %s\n", cap.bus_info);
 
+    //set pic width height
     tv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     tv_fmt.fmt.pix.width = width;
     tv_fmt.fmt.pix.height = height;
@@ -129,6 +136,18 @@ void Camera::initCamera(void) {
         close(fd);
         exit(-1);
     }
+
+    //set pic fps
+    struct v4l2_streamparm streamparm;
+    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    streamparm.parm.capture.timeperframe.numerator = 1;
+    streamparm.parm.capture.timeperframe.denominator = fps;
+    if (ioctl(this->fd, VIDIOC_S_PARM, &streamparm) == -1) {
+        fprintf(stderr, "VIDIOC_S_PARM set err\n");
+        close(fd);
+        exit(-1);
+    }
+
 }
 
 void Camera::initMmap(void) {
@@ -295,24 +314,13 @@ void Camera::compressBegin(Camera::Encoder *en, int width, int height) {
     en->param = (x264_param_t *) malloc(sizeof(x264_param_t));
     en->picture = (x264_picture_t *) malloc(sizeof(x264_picture_t));
     x264_param_default(en->param); //set default param
-    //en->param->rc.i_rc_method = X264_RC_CQP;
+
     en->param->i_log_level = X264_LOG_NONE;
 
     en->param->i_threads = X264_SYNC_LOOKAHEAD_AUTO;
     en->param->i_width = width; //set frame width
     en->param->i_height = height; //set frame height
-
-    //en->param->i_frame_total = 0;
-
-    //en->param->i_keyint_max = 10;
     en->param->rc.i_lookahead = 0;//表示I帧向前缓冲区
-    //en->param->i_bframe = 5;
-
-    //en->param->b_open_gop = 0;
-    //en->param->i_bframe_pyramid = 0;
-    //en->param->i_bframe_adaptive = X264_B_ADAPT_TRELLIS;
-
-    //en->param->rc.i_bitrate = 1024 * 10;//rate 10 kbps
     en->param->i_fps_num = 30;//帧率分子
     en->param->i_fps_den = 1;//帧率分母
     en->param->i_csp = X264_CSP_I422;

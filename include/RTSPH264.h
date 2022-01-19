@@ -19,28 +19,32 @@ using namespace std;
 
 class RTSPH264 {
 public:
+    //rtsp server相关
     TaskScheduler *scheduler = nullptr;
     UsageEnvironment *env = nullptr;
     string streamName = "testStream";
-    H264VideoStreamFramer *videoSource = nullptr;
-    RTPSink *videoSink = nullptr;
-    RTCPInstance *rtcp = nullptr;
-    //camera
-    Camera *camera;
-
-    //验证信息相关
+    RTSPServer *rtspServer = nullptr;
+    ServerMediaSession *sms = nullptr;
+    // rtsp server验证信息
     bool isNeedAuth = false;
     string usr = "username1";
     string passwd = "password1";
+
+    //camera相关
+    Camera *camera = nullptr;
+    string cameraDev = "/dev/video";
+    int picWidth = 640;
+    int picHeight = 480;
+    int fps = 30;
 
     //2个线程
     bool isOpen = false;
     thread thread_dumpFifo;//向fifo内填充图像
     thread thread_rtspServer;//启动rtsp服务端
 
-//#define STREAM_DEBUG //是否开启rtsp server测试
 public:
     RTSPH264();
+    RTSPH264(Camera::Config cameraConf);
 
     ~RTSPH264();
 
@@ -57,11 +61,6 @@ private:
     static void ThreadDumpFifo(void *p);
 
     static void ThreadRtspServer(void *p);
-
-    static void afterPlaying(void *clientData);
-
-    static void play(void *p);
-
 };
 
 

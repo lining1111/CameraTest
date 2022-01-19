@@ -13,6 +13,7 @@ using namespace std;
 
 class Camera {
 #define IMGSHOW 0
+public:
     typedef struct {
         x264_param_t *param;
         x264_t *handle;
@@ -25,29 +26,39 @@ class Camera {
         int length;
     } BUFTYPE;
 
+
+    typedef struct {
+        string dev;//设备节点 linux /dev/videoX
+        string fifo;//fifo路径
+        int picWidth;//摄像头图片宽
+        int picHeight;//摄像头图片高
+        int fps;//摄像头帧数
+    } Config;
+
 public:
     int width = 640;
     int height = 480;
+    int fps = 30;
     string file_video = "/dev/video0";
-
+    string fifoName = "./video_fifo";
     //camera fd
     int fd;
+    //fifo
+    int pipe_fd;
+
     //h246 buf
     char *h264Buf;
     int h264BufLen;
     unsigned int n_buffer;
     BUFTYPE *usr_buf;
     Encoder en;
-    //fifo
-    int pipe_fd;
-    string fifoName = "./video_fifo";
 
     bool isInit = false;
 
 public:
     Camera();
 
-    Camera(int width, int height, string video, string fifoName);
+    Camera(Config conf);
 
     ~Camera();
 
