@@ -100,6 +100,13 @@ public:
 
     void closeEncoder(void);
 
+    // h264 sei
+    static void freePayload(void *payload);
+
+    void addH264SEIFree(x264_picture_t *pic);
+
+    void addH264SEI(x264_picture_t *pic, x264_sei_payload_t *sei, int num = 1);
+
     //程序流程
     // Init(openCamera---initCamera---initMmap---openPipe---initEncoder---startCapture)
     // ---GetNextFrame(cameraAbleRead---readOneFrame---compressFrame---写入pipe_fd)

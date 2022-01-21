@@ -378,6 +378,19 @@ int Camera::compressFrame(Camera::Encoder *en, int type, char *in, int len, char
 
     en->picture->i_pts = pts++;
 
+    //add sei
+//    addH264SEIFree(en->picture);
+//    uint8_t data[333] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+//                        'h', 'e', 'l', 'l', 'o', ',', 'w', 'o', 'r', 'l', 'd', '!', '!', '!', '!', '!'};
+//    x264_sei_payload_t *sei = (x264_sei_payload_t *) malloc(sizeof(x264_picture_t));
+//    sei->payload_type = 0x05;//自定义信息
+//    sei->payload_size = sizeof(data) / sizeof(data[0]);
+//    sei->payload = (uint8_t *) malloc(sei->payload_size);
+//    memcpy(sei->payload, data, sei->payload_size);
+//
+//    addH264SEI(en->picture, sei, 1);
+
+
     if (x264_encoder_encode(en->handle, &(en->nal), &nNal, en->picture,
                             &pic_out) < 0) {
         return -1;
@@ -410,6 +423,21 @@ void Camera::compressEnd(Camera::Encoder *en) {
 void Camera::closeEncoder(void) {
     compressEnd(&en);
     free(h264Buf);
+}
+
+void Camera::freePayload(void *payload) {
+    if (payload != nullptr) {
+        free(payload);
+    }
+}
+
+void Camera::addH264SEIFree(x264_picture_t *pic) {
+    pic->extra_sei.sei_free = freePayload;
+}
+
+void Camera::addH264SEI(x264_picture_t *pic, x264_sei_payload_t *sei, int num) {
+    pic->extra_sei.payloads = sei;
+    pic->extra_sei.num_payloads = num;
 }
 
 void Camera::Init() {
