@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(OpenCV REQUIRED)
 
 set(LINK_LIBS m pthread jpeg iconv sqlite3 ssl crypto x264)
-set(LIVE555_LIBS liveMedia groupsock BasicUsageEnvironment UsageEnvironment )
+set(LIVE555_LIBS liveMedia groupsock BasicUsageEnvironment UsageEnvironment)
 include_directories(.)
 include_directories(include)
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -31,3 +31,4 @@ target_link_libraries(${TargetName} ${OpenCV_LIBS} ${LIVE555_LIBS} ${LINK_LIBS})
 
 ##test
 add_subdirectory(test)
+add_subdirectory(ffmpeg)
