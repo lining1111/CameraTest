@@ -1,10 +1,16 @@
 //
 // Created by lining on 1/26/22.
 //
+/**
+ * 将视频流文件转换为图片
+ */
 
+
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+}
 
 void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
     FILE *pFile;
@@ -43,10 +49,9 @@ int main(int argc, char *argv[]) {
         printf("please provide a movie file\n");
         return -1;
     }
-    //register all formats and codes
-    av_register_all();
     //support network stream input
     avformat_network_init();
+    //初始化 format context
     pFormatCtx = avformat_alloc_context();
     //Open the media file and read the header
     if (avformat_open_input(&pFormatCtx, argv[1], NULL, NULL) != 0) {

@@ -1,4 +1,4 @@
-##cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.19)
 project(CameraTest)
 
 set(TargetName "CameraTest")
@@ -8,6 +8,7 @@ find_package(OpenCV REQUIRED)
 
 set(LINK_LIBS m pthread jpeg iconv sqlite3 ssl crypto x264)
 set(LIVE555_LIBS liveMedia groupsock BasicUsageEnvironment UsageEnvironment)
+
 include_directories(.)
 include_directories(include)
 include_directories(${OpenCV_INCLUDE_DIRS})

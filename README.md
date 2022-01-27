@@ -16,3 +16,7 @@ vlc观看有延迟，主要是vlc设置问题 工具---偏好设置---(显示全
 2.数据推流线程：开启rtsp server 添加自定义的mediaSubSession 这个subsession会新建一个自定义的FramedSource 自定义的好处，就是分解业务，后期对照live555的说明文档进行优化
 OnDemandServerMediaSubsessionH264 和 liveMedia下的H264VideoFileServerMediaSubsession.cpp类似
 FramedSourceH264就是FramedSource的子类，重点是实现虚函数 doGetNextFrame
+
+## ffmpeg https://ffmpeg.org/
+
+cpp文件在添加ffmpeg头文件的时候，一定要包裹在 extern "C"{ }内
