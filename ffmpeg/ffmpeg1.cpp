@@ -102,18 +102,7 @@ int main(int argc, char *argv[]) {
     while (av_read_frame(pFormatCtx, &packet) >= 0) {
         if (packet.stream_index == videoStream) {
             //根据AVPacket结构体内的flag参量 枚举值为AV_PKT_FLAG
-//            int ret;
-//            ret = avcodec_send_packet(pCodecCtx, &packet);
-//            if (ret < 0) {
-//                printf("packet send fail\n");
-//                continue;
-//            }
-//            ret = avcodec_receive_frame(pCodecCtx, pFrame);
-//            if (ret < 0) {
-//                printf("frame receive fail\n");
-//            } else if (ret == 0) {
-//                frameFinished = true;
-//            }
+
             avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
             if (frameFinished) {
                 struct SwsContext *img_convert_ctx = NULL;
@@ -136,6 +125,7 @@ int main(int argc, char *argv[]) {
         av_free_packet(&packet);
     }
     //free the RGB image
+    end:
     av_free(buffer);
     av_free(pFrameRGB);
     av_free(pFrame);
